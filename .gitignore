@@ -1,0 +1,33 @@
+# Node Modules
+node_modules/
+
+# Environment Files
+.env
+
+# Logs
+logs
+*.log
+
+# Vite
+dist/
+
+# Build
+build/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Coverage
+coverage/
+
+# npm
+package-lock.json
+
+# Yarn
+yarn.lock
