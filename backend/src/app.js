@@ -1,11 +1,9 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const { errorHandler } = require('./middleware/error');
-
-// Import routes
-const authRoutes = require('./routes/authRoutes');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { errorHandler } from './middleware/error.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
@@ -44,4 +42,4 @@ app.use((req, res) => {
 // Error handler
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

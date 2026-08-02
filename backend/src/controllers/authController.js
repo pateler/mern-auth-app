@@ -1,9 +1,6 @@
-const User = require('../models/User');
+import User from "../models/User.js";
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-exports.register = async (req, res, next) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
@@ -12,31 +9,33 @@ exports.register = async (req, res, next) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email',
+        message: "User already exists with this email",
       });
     }
 
-    // Create user
+    // Create user - this will trigger the pre-save middleware for password hashing
     const user = await User.create({
       name,
       email,
       password,
     });
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    // Update last login WITHOUT triggering pre-save middleware
+    await User.findByIdAndUpdate(
+      user._id,
+      { lastLogin: new Date() },
+      { runValidators: false }, // Prevents validation from running
+    );
 
-    sendTokenResponse(user, 201, res);
+    // Fetch updated user
+    const updatedUser = await User.findById(user._id);
+    sendTokenResponse(updatedUser, 201, res);
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-exports.login = async (req, res, next) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -44,16 +43,16 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide an email and password',
+        message: "Please provide an email and password",
       });
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: "Invalid credentials",
       });
     }
 
@@ -61,7 +60,7 @@ exports.login = async (req, res, next) => {
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated. Please contact support.',
+        message: "Account is deactivated. Please contact support.",
       });
     }
 
@@ -70,24 +69,26 @@ exports.login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: "Invalid credentials",
       });
     }
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    // Update last login WITHOUT triggering pre-save middleware
+    await User.findByIdAndUpdate(
+      user._id,
+      { lastLogin: new Date() },
+      { runValidators: false }, // Prevents validation from running
+    );
 
-    sendTokenResponse(user, 200, res);
+    // Fetch updated user (without password)
+    const updatedUser = await User.findById(user._id);
+    sendTokenResponse(updatedUser, 200, res);
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
-exports.getMe = async (req, res, next) => {
+export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     res.status(200).json({
@@ -99,14 +100,11 @@ exports.getMe = async (req, res, next) => {
   }
 };
 
-// @desc    Logout user / clear cookie
-// @route   POST /api/auth/logout
-// @access  Private
-exports.logout = async (req, res, next) => {
+export const logout = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
-      message: 'Logged out successfully',
+      message: "Logged out successfully",
     });
   } catch (error) {
     next(error);

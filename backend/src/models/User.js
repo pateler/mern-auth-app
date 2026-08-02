@@ -1,35 +1,35 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Please add a name'],
+      required: [true, "Please add a name"],
       trim: true,
-      maxlength: [50, 'Name cannot be more than 50 characters'],
+      maxlength: [50, "Name cannot be more than 50 characters"],
     },
     email: {
       type: String,
-      required: [true, 'Please add an email'],
+      required: [true, "Please add an email"],
       unique: true,
       lowercase: true,
       trim: true,
       match: [
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Please add a valid email',
+        "Please add a valid email",
       ],
     },
     password: {
       type: String,
-      required: [true, 'Please add a password'],
-      minlength: [8, 'Password must be at least 8 characters'],
+      required: [true, "Please add a password"],
+      minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ["user", "admin"],
+      default: "user",
     },
     isActive: {
       type: Boolean,
@@ -51,17 +51,22 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-// Encrypt password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
+// FIXED: Use async/await without next parameter
+userSchema.pre("save", async function () {
+  // Only hash the password if it's modified
+  if (!this.isModified("password")) {
+    return;
   }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    throw error;
+  }
 });
 
 // Compare password method
@@ -71,11 +76,23 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 
 // Generate JWT token
 userSchema.methods.getSignedJwtToken = function () {
-  return require('jsonwebtoken').sign(
+  const jwt = require("jsonwebtoken");
+  return jwt.sign(
     { id: this._id, email: this.email, role: this.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    { expiresIn: process.env.JWT_EXPIRE },
   );
 };
 
-module.exports = mongoose.model('User', userSchema);
+userSchema.methods.updateLastLogin = async function () {
+  // Use findByIdAndUpdate to avoid triggering pre-save hooks
+  await this.constructor.findByIdAndUpdate(
+    this._id,
+    { lastLogin: new Date() },
+    { runValidators: false }
+  );
+  this.lastLogin = new Date();
+  return this;
+};
+
+export default mongoose.model("User", userSchema);

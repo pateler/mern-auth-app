@@ -1,12 +1,12 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
-const {
+import { protect, authorize } from '../middleware/auth.js';
+import {
   register,
   login,
   getMe,
   logout,
-} = require('../controllers/authController');
+} from '../controllers/authController.js';
 
 // Public routes
 router.post('/register', register);
@@ -26,4 +26,4 @@ router.get('/admin-only', authorize('admin'), (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;
