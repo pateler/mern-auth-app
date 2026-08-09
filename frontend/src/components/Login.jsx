@@ -7,7 +7,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, loading, error } = useAuth();
   const [formData, setFormData] = useState({
-    email: "nizamdalal222@digitechs.com",
+    email: "",
     password: "",
   });
   const [rememberMe, setRememberMe] = useState(false);

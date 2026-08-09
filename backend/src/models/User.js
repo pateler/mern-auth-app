@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
   {
@@ -48,13 +49,50 @@ const userSchema = new mongoose.Schema(
         default: Date.now,
       },
     },
+    preferences: {
+      timezone: {
+        type: String,
+        default: 'Asia/Kolkata (IST)',
+      },
+      currency: {
+        type: String,
+        default: 'INR - Indian Rupees',
+      },
+      notifications: {
+        emailNewOrders: { type: Boolean, default: true },
+        emailRefunds: { type: Boolean, default: true },
+        emailChat: { type: Boolean, default: true },
+        emailFailedPayments: { type: Boolean, default: true },
+        pushBrowser: { type: Boolean, default: true },
+        pushMobile: { type: Boolean, default: false },
+        smsOrderConfirmations: { type: Boolean, default: true },
+        smsDeliveryUpdates: { type: Boolean, default: false },
+      },
+    },
+    companyDetails: {
+      companyName: { type: String, default: '' },
+      contactNumber: { type: String, default: '' },
+      businessAddress: { type: String, default: '' },
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    activeSessions: [{
+      device: String,
+      browser: String,
+      location: String,
+      ip: String,
+      lastActive: Date,
+      isCurrent: { type: Boolean, default: false },
+    }],
   },
   {
     timestamps: true,
   },
 );
 
-// FIXED: Use async/await without next parameter
+// Pre-save middleware - hash password
 userSchema.pre("save", async function () {
   // Only hash the password if it's modified
   if (!this.isModified("password")) {
@@ -74,18 +112,16 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate JWT token
+// Generate JWT token - FIXED: Use imported jwt
 userSchema.methods.getSignedJwtToken = function () {
-  const jwt = require("jsonwebtoken");
   return jwt.sign(
     { id: this._id, email: this.email, role: this.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE },
+    { expiresIn: process.env.JWT_EXPIRE }
   );
 };
 
 userSchema.methods.updateLastLogin = async function () {
-  // Use findByIdAndUpdate to avoid triggering pre-save hooks
   await this.constructor.findByIdAndUpdate(
     this._id,
     { lastLogin: new Date() },

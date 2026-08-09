@@ -1,4 +1,6 @@
-import User from "../models/User.js";
+import User from '../models/User.js';
+import AuditLog from '../models/AuditLog.js';
+import { generateToken } from '../utils/helpers.js';
 
 export const register = async (req, res, next) => {
   try {
@@ -9,27 +11,33 @@ export const register = async (req, res, next) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists with this email",
+        message: 'User already exists with this email',
       });
     }
 
-    // Create user - this will trigger the pre-save middleware for password hashing
+    // Create user
     const user = await User.create({
       name,
       email,
       password,
+      workspace: {
+        name: `${name}'s Workspace`,
+      },
     });
 
-    // Update last login WITHOUT triggering pre-save middleware
-    await User.findByIdAndUpdate(
-      user._id,
-      { lastLogin: new Date() },
-      { runValidators: false }, // Prevents validation from running
-    );
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
 
-    // Fetch updated user
-    const updatedUser = await User.findById(user._id);
-    sendTokenResponse(updatedUser, 201, res);
+    // Log audit
+    await AuditLog.create({
+      user: { name: user.name, email: user.email, userId: user._id },
+      action: 'User registered',
+      module: 'Users',
+      details: { method: 'Register' },
+    });
+
+    sendTokenResponse(user, 201, res);
   } catch (error) {
     next(error);
   }
@@ -37,22 +45,22 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     // Validate email & password
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please provide an email and password",
+        message: 'Please provide an email and password',
       });
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: 'Invalid credentials',
       });
     }
 
@@ -60,7 +68,7 @@ export const login = async (req, res, next) => {
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Account is deactivated. Please contact support.",
+        message: 'Account is deactivated. Please contact support.',
       });
     }
 
@@ -69,20 +77,26 @@ export const login = async (req, res, next) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: 'Invalid credentials',
       });
     }
 
-    // Update last login WITHOUT triggering pre-save middleware
-    await User.findByIdAndUpdate(
-      user._id,
-      { lastLogin: new Date() },
-      { runValidators: false }, // Prevents validation from running
-    );
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
 
-    // Fetch updated user (without password)
-    const updatedUser = await User.findById(user._id);
-    sendTokenResponse(updatedUser, 200, res);
+    // Log audit
+    await AuditLog.create({
+      user: { name: user.name, email: user.email, userId: user._id },
+      action: 'User logged in',
+      module: 'Users',
+      details: {
+        method: 'Login',
+        rememberMe: rememberMe || false,
+      },
+    });
+
+    sendTokenResponse(user, 200, res);
   } catch (error) {
     next(error);
   }
@@ -102,9 +116,74 @@ export const getMe = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
+    // Log audit
+    await AuditLog.create({
+      user: { name: req.user.name, email: req.user.email, userId: req.user._id },
+      action: 'User logged out',
+      module: 'Users',
+    });
+
     res.status(200).json({
       success: true,
-      message: "Logged out successfully",
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const { name, companyDetails, preferences } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (name) user.name = name;
+    if (companyDetails) {
+      user.companyDetails = { ...user.companyDetails, ...companyDetails };
+    }
+    if (preferences) {
+      user.preferences = { ...user.preferences, ...preferences };
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id).select('+password');
+
+    // Check current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    // Log audit
+    await AuditLog.create({
+      user: { name: user.name, email: user.email, userId: user._id },
+      action: 'Password changed',
+      module: 'Users',
+      details: { method: 'Password Change' },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
     });
   } catch (error) {
     next(error);
@@ -121,6 +200,9 @@ const sendTokenResponse = (user, statusCode, res) => {
     email: user.email,
     role: user.role,
     lastLogin: user.lastLogin,
+    preferences: user.preferences,
+    companyDetails: user.companyDetails,
+    workspace: user.workspace,
   };
 
   res.status(statusCode).json({
