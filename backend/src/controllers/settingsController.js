@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import Integration from '../models/Integration.js';
 import AuditLog from '../models/AuditLog.js';
 
-export default getSettings = async (req, res, next) => {
+export const getSettings = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id).select('preferences companyDetails workspace');
         res.status(200).json({
@@ -14,7 +14,7 @@ export default getSettings = async (req, res, next) => {
     }
 };
 
-export default updateGeneralSettings = async (req, res, next) => {
+export const updateGeneralSettings = async (req, res, next) => {
     try {
         const { companyName, contactNumber, businessAddress, timezone, currency } = req.body;
         const user = await User.findById(req.user.id);
@@ -43,7 +43,7 @@ export default updateGeneralSettings = async (req, res, next) => {
     }
 };
 
-export default updateNotifications = async (req, res, next) => {
+export const updateNotifications = async (req, res, next) => {
     try {
         const notifications = req.body;
         const user = await User.findById(req.user.id);
@@ -71,7 +71,7 @@ export default updateNotifications = async (req, res, next) => {
     }
 };
 
-export default getIntegrations = async (req, res, next) => {
+export const getIntegrations = async (req, res, next) => {
     try {
         const integrations = await Integration.find({ isActive: true });
         res.status(200).json({
@@ -83,7 +83,7 @@ export default getIntegrations = async (req, res, next) => {
     }
 };
 
-export default updateIntegration = async (req, res, next) => {
+export const updateIntegration = async (req, res, next) => {
     try {
         const { status, settings } = req.body;
         const integration = await Integration.findById(req.params.id);
@@ -117,7 +117,7 @@ export default updateIntegration = async (req, res, next) => {
     }
 };
 
-export default syncIntegration = async (req, res, next) => {
+export const syncIntegration = async (req, res, next) => {
     try {
         const integration = await Integration.findById(req.params.id);
         if (!integration) {
@@ -148,7 +148,7 @@ export default syncIntegration = async (req, res, next) => {
     }
 };
 
-export default getTeamMembers = async (req, res, next) => {
+export const getTeamMembers = async (req, res, next) => {
     try {
         const users = await User.find({ isActive: true }).select('name email role lastLogin');
         res.status(200).json({
@@ -160,7 +160,7 @@ export default getTeamMembers = async (req, res, next) => {
     }
 };
 
-export default updateTeamMember = async (req, res, next) => {
+export const updateTeamMember = async (req, res, next) => {
     try {
         const { role, isActive } = req.body;
         const user = await User.findById(req.params.id);

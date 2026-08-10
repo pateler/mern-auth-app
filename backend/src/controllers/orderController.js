@@ -2,7 +2,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import AuditLog from '../models/AuditLog.js';
 
-exports.getOrders = async (req, res, next) => {
+export const getOrders = async (req, res, next) => {
     try {
         const { status, search, page = 1, limit = 10 } = req.query;
         const query = {};

@@ -1,6 +1,6 @@
 import AuditLog from '../models/AuditLog.js';
 
-export default getAuditLogs = async (req, res, next) => {
+export const getAuditLogs = async (req, res, next) => {
     try {
         const { search, module, page = 1, limit = 10, startDate, endDate } = req.query;
         const query = {};
@@ -46,7 +46,7 @@ export default getAuditLogs = async (req, res, next) => {
     }
 };
 
-export default getAuditLog = async (req, res, next) => {
+export const getAuditLog = async (req, res, next) => {
     try {
         const log = await AuditLog.findById(req.params.id);
         if (!log) {
@@ -64,7 +64,7 @@ export default getAuditLog = async (req, res, next) => {
     }
 };
 
-export default getAuditStats = async (req, res, next) => {
+export const getAuditStats = async (req, res, next) => {
     try {
         const stats = await AuditLog.aggregate([
             {

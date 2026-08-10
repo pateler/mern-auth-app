@@ -3,7 +3,7 @@ import Product from '../models/Product.js';
 import User from '../models/User.js';
 import moment from 'moment';
 
-export default getDashboardAnalytics = async (req, res, next) => {
+export const getDashboardAnalytics = async (req, res, next) => {
     try {
         const { period = 'month' } = req.query;
         const startDate = moment().subtract(1, period).startOf(period);
@@ -110,7 +110,7 @@ export default getDashboardAnalytics = async (req, res, next) => {
     }
 };
 
-export default getRevenueReport = async (req, res, next) => {
+export const getRevenueReport = async (req, res, next) => {
     try {
         const { period = '12 months' } = req.query;
         let startDate;
@@ -159,7 +159,7 @@ export default getRevenueReport = async (req, res, next) => {
     }
 };
 
-export default getTrafficSources = async (req, res, next) => {
+export const getTrafficSources = async (req, res, next) => {
     try {
         // Mock traffic data (in real app, this would come from analytics tracking)
         const trafficData = [

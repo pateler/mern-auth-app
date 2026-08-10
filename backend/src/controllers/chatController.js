@@ -1,7 +1,7 @@
 import Chat from '../models/Chat.js';
 import AuditLog from '../models/AuditLog.js';
 
-export default getChats = async (req, res, next) => {
+export const getChats = async (req, res, next) => {
     try {
         const { status, search, page = 1, limit = 10 } = req.query;
         const query = {};
@@ -41,7 +41,7 @@ export default getChats = async (req, res, next) => {
     }
 };
 
-export default getChat = async (req, res, next) => {
+export const getChat = async (req, res, next) => {
     try {
         const chat = await Chat.findById(req.params.id).populate('assignedTo', 'name email');
         if (!chat) {
@@ -59,7 +59,7 @@ export default getChat = async (req, res, next) => {
     }
 };
 
-export default createChat = async (req, res, next) => {
+export const createChat = async (req, res, next) => {
     try {
         const chat = await Chat.create(req.body);
 
@@ -80,7 +80,7 @@ export default createChat = async (req, res, next) => {
     }
 };
 
-export default addMessage = async (req, res, next) => {
+export const addMessage = async (req, res, next) => {
     try {
         const { message, sender } = req.body;
         const chat = await Chat.findById(req.params.id);
@@ -113,7 +113,7 @@ export default addMessage = async (req, res, next) => {
     }
 };
 
-export default resolveChat = async (req, res, next) => {
+export const resolveChat = async (req, res, next) => {
     try {
         const chat = await Chat.findById(req.params.id);
         if (!chat) {
@@ -143,7 +143,7 @@ export default resolveChat = async (req, res, next) => {
     }
 };
 
-export default markUrgent = async (req, res, next) => {
+export const markUrgent = async (req, res, next) => {
     try {
         const chat = await Chat.findById(req.params.id);
         if (!chat) {
@@ -166,7 +166,7 @@ export default markUrgent = async (req, res, next) => {
     }
 };
 
-export default assignChat = async (req, res, next) => {
+export const assignChat = async (req, res, next) => {
     try {
         const { assignedTo } = req.body;
         const chat = await Chat.findById(req.params.id);
